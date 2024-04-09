@@ -1,0 +1,57 @@
+name: Build and Scan Application with Snyk and StackHawk
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-test-application:
+    runs-on: ubuntu-latest
+
+    env:
+      PROJECT_DIR: "/home/runner/work/backend/backend"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install dependencies, build and run application
+        run: |
+          npm install
+          npm run build
+          npm start
+        working-directory: ${{ env.PROJECT_DIR }}
+
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Snyk code test
+        run: |
+          snyk test ${{ env.PROJECT_DIR }} || true
+          snyk auth ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true
+
+      - name: Snyk code monitoringfor
+        run: |
+          snyk monitor ${{ env.PROJECT_DIR }} || true
+          snyk auth ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true
+
+      - name: Get Snyk report
+        run: |
+          snyk test --json ${{ env.PROJECT_DIR }} > snyk_report.json
+          cat snyk_report.json
+        continue-on-error: true
+        if: always()
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+    #   - name: StackHawk Scan for Dynamic Application Security Testing
+    #     env:
+    #         HAWK_ENV: Github Actions - ${{ github.repository }}
+    #     continue-on-error: true
+    #     uses: stackhawk/hawkscan-action@v2
+    #     with:
+    #       apiKey: ${{ secrets.STACK_HAWK_API_KEY }}
