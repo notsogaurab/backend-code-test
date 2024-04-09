@@ -22,7 +22,6 @@ jobs:
           npm install
           npm run build
           npm start
-        working-directory: ${{ env.PROJECT_DIR }}
 
       - name: Install Snyk CLI
         run: npm install -g snyk
